@@ -1,0 +1,96 @@
+---
+output: html_document
+params:
+  study_note_oid: !r 1
+  database_file: 'C:/Users/bnutter/Documents/MyStudyNotes.sqlite'
+---
+
+```{r, echo=FALSE, message = FALSE, warning = FALSE, eval = TRUE}
+library(DBI)
+library(dplyr)
+
+options(dplyr.summarise.inform = FALSE)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      error = TRUE)
+
+files <- list.files("./R", 
+                    full.names = TRUE, 
+                    pattern = ".R$")
+invisible(lapply(files, source))
+
+conn <- dbConnect(RSQLite::SQLite(), 
+                  params$database_file)
+
+STUDY_NOTE_OID <- params$study_note_oid
+DATABASE_FILE <- params$database_file
+```
+
+```{sql, connection = conn, output.var = 'StudyNote'}
+SELECT SN.OID, 
+  SN.Note
+FROM StudyNote SN
+WHERE OID = ?STUDY_NOTE_OID
+```
+
+```{sql, connection = conn, output.var = 'RelevantTopic'}
+SELECT SNT.ParentStudyNote, 
+  SNT.ParentTopic,
+  T.Topic
+FROM StudyNoteTopic SNT
+  LEFT JOIN Topic T
+    ON SNT.ParentTopic = T.OID
+WHERE SNT.ParentStudyNote = ?STUDY_NOTE_OID
+```
+
+```{sql, connection = conn, output.var = 'ScriptureReference'}
+SELECT ParentStudyNote, 
+  ParentVerse
+FROM StudyNoteScriptureReference
+WHERE ParentStudyNote = ?STUDY_NOTE_OID
+```
+
+```{sql, connection = conn, output.var = 'OtherReference'}
+SELECT ParentStudyNote, 
+  Reference
+FROM StudyNoteOtherReference
+WHERE ParentStudyNote = ?STUDY_NOTE_OID
+```
+
+
+```{r}
+topics <- 
+  RelevantTopic$Topic %>% 
+  sort() %>% 
+  paste0(collapse = ",")
+```
+
+**Relevant Topics:** `r topics`
+
+
+```{r}
+scriptures <- 
+  ScriptureReference$ParentVerse %>% 
+  formatScriptureReference() %>% 
+  paste0(collapse = "; ")
+```
+
+
+**Referenced Scriptures:** `r scriptures`
+
+**Other References**
+
+```{r, results = 'asis'}
+OtherReference$Reference %>% 
+  sprintf("* %s", .) %>% 
+  paste0(collapse = "\n") %>% 
+  cat()
+```
+
+<hr style = 'border: none;height: 1px; background-color: black;'>
+
+```{r, results = 'asis'}
+StudyNote$Note %>% 
+  cat()
+```
