@@ -1,6 +1,6 @@
 shinyServer(function(input, output, session){
   
-  # Reactive Values -------------------------------------------------
+  # Notes - Reactive Values -----------------------------------------
   
   rv_Notes <- reactiveValues(
     AddEditView = "Add", 
@@ -8,14 +8,19 @@ shinyServer(function(input, output, session){
     StudyNotes = getStudyNotes(DATABASE_FILE),
     
     SelectedStudyNote = data.frame(),
+    
     SavedScripturalReference = numeric(0), 
     SavedOtherReference = numeric(0), 
+    SavedStudyTopic = numeric(0),
     
     PendingScripturalReference = numeric(0), 
-    PendingOtherReference = character(0)
+    PendingOtherReference = character(0), 
+    PendingStudyTopic = numeric(0), 
+    
+    NoteHtmlCode = NULL
   )
   
-  # Event Observers -------------------------------------------------
+  # Notes - Event Observers -----------------------------------------
   
   observeEvent(
     input$rdo_studyNote,
@@ -24,13 +29,99 @@ shinyServer(function(input, output, session){
       rv_Notes$SelectedStudyNote <- rv_Notes$StudyNotes[rv_Notes$StudyNotes$OID == oid, ]
       rv_Notes$SavedScripturalReference <- getScripturalReference(oid)
       rv_Notes$SavedOtherReference <- getOtherReference(oid)
+      rv_Notes$SavedStudyTopic <- getStudyTopic(oid)
     }
   )
+  
+  # Notes - Event Observers - Filter selection inputs ---------------
+  
+  observeEvent(
+    input$sel_filterTome, 
+    {
+      book <- updateBookSelection(tome_oid = as.numeric(input$sel_filterTome), 
+                                  inputId = "sel_filterBook")
+      chapter <- updateChapterSelection(book_oid = book[1], 
+                                        inputId = "sel_filterChapter")
+      updateVerseSelection(chapter_oid = chapter[1], 
+                           inputId = "chkgrp_fingerVerse")
+    }
+  )
+  
+  observeEvent(
+    input$sel_filterBook, 
+    {
+      req(input$sel_reference_book)
+      chapter <- updateChapterSelection(book_oid = as.numeric(input$sel_filterBook), 
+                                        inputId = "sel_filterChapter")
+      updateVerseSelection(chapter_oid = chapter[1], 
+                           inputId = "chkgrp_filterVerse")
+    }
+  )
+  
+  observeEvent(
+    input$sel_filterChapter,
+    {
+      req(input$sel_reference_chapter)
+      updateVerseSelection(chapter_oid = as.numeric(input$sel_filterChapter), 
+                           inputId = "chkgrp_filterVerse")
+    }
+  )
+  
+  observeEvent(
+    input$btn_clearFilters, 
+    {
+      updateSelectInput(session = session, 
+                        inputId = "sel_filterTome", 
+                        selected = "1")
+      
+      updateBookSelection(tome_oid = 1, 
+                          inputId = "sel_filterBook")
+      updateChapterSelection(book_oid = 1, 
+                             inputId = "sel_filterChapter")
+      updateVerseSelection(chapter_oid = 1, 
+                           inputId = "chkgrp_filterVerse")
+      updateSelectInput(session = session, 
+                        inputId = "sel_filterTopic", 
+                        selected = character(0))
+      
+      replaceData(proxy_dt_studyNotes,
+                  rv_Notes$StudyNotes %>% 
+                    radioDataTable(id_variable = "OID", 
+                                   element_name = "rdo_studyNote"),
+                  resetPaging = FALSE,
+                  rownames = FALSE)
+    }
+  )
+  
+  observeEvent(
+    input$btn_applyFilters,
+    {
+      FilterData <- getStudyNoteFilterData()
+      FilterData <- FilterData[FilterData$ParentVerse %in% as.numeric(input$chkgrp_filterVerse) | 
+                                 FilterData$ParentTopic %in% as.numeric(input$sel_filterTopic), ]
+      
+      MatchingData <- rv_Notes$StudyNotes
+      MatchingData <- MatchingData[MatchingData$OID %in% FilterData$StudyNoteOID, ]
+      
+      replaceData(proxy_dt_studyNotes,
+                  MatchingData %>% 
+                    radioDataTable(id_variable = "OID", 
+                                   element_name = "rdo_studyNote"),
+                  resetPaging = FALSE,
+                  rownames = FALSE)
+    }
+  )
+  
+  # Notes - Event Observers - Add/Edit Buttons ----------------------
   
   observeEvent(
     input$btn_addStudyNote, 
     {
       rv_Notes$AddEditView <- "Add"
+      
+      updateTextInput(session = session, 
+                      inputId = "txt_studyNoteText", 
+                      value = "")
       
       updateSelectInput(session = session, 
                         inputId = "sel_reference_tome", 
@@ -39,6 +130,13 @@ shinyServer(function(input, output, session){
      updateBookSelection(tome_oid = 1)
      updateChapterSelection(book_oid = 1)
      updateVerseSelection(chapter_oid = 1)
+     updateSelectInput(session = session, 
+                       inputId = "sel_studyNoteTopic", 
+                       selected = character(0))
+     
+     rv_Notes$PendingScripturalReference <- numeric(0)
+     rv_Notes$PendingOtherReference <- character(0)
+     rv_Notes$PendingStudyTopic <- numeric(0)
       
       toggleModal(session = session, 
                   modalId = "modal_studyNote", 
@@ -62,12 +160,47 @@ shinyServer(function(input, output, session){
       updateBookSelection(tome_oid = 1)
       updateChapterSelection(book_oid = 1)
       updateVerseSelection(chapter_oid = 1)
+      updateSelectInput(session = session, 
+                        inputId = "sel_studyNoteTopic", 
+                        selected = character(0))
+      
+      rv_Notes$PendingScripturalReference <- numeric(0)
+      rv_Notes$PendingOtherReference <- character(0)
+      rv_Notes$PendingStudyTopic <- numeric(0)
       
       toggleModal(session = session, 
                   modalId = "modal_studyNote", 
                   toggle = "open")
     }
   )
+  
+  observeEvent(
+    input$btn_saveStudyNote, 
+    {
+      study_note_oid <- if(rv_Notes$AddEditView == "Add") numeric(0) else as.numeric(input$rdo_studyNote)
+      saveNote(note = input$txt_studyNoteText, 
+               study_note_oid = study_note_oid,
+               verse_oid = rv_Notes$PendingScripturalReference, 
+               other_reference = rv_Notes$PendingOtherReference, 
+               topic_oid = rv_Notes$PendingStudyTopic)
+      
+      rv_Notes$StudyNotes <- getStudyNotes(DATABASE_FILE)
+      
+      replaceData(proxy_dt_studyNotes,
+                  rv_Notes$StudyNotes %>% 
+                    radioDataTable(id_variable = "OID", 
+                                   element_name = "rdo_studyNote", 
+                                   checked = as.numeric(input$rdo_studyNote)),
+                  resetPaging = FALSE,
+                  rownames = FALSE)
+      
+      toggleModal(session = session, 
+                  modalId = "modal_studyNote", 
+                  toggle = "close")
+    }
+  )
+  
+  # Notes - Event Observers - Reference selecion inputs -------------
   
   observeEvent(
     input$sel_reference_tome, 
@@ -94,6 +227,8 @@ shinyServer(function(input, output, session){
       updateVerseSelection(chapter_oid = as.numeric(input$sel_reference_chapter))
     }
   )
+  
+  # Notes - Event Observers - Add Reference button ------------------
   
   observeEvent(
     input$btn_addScriptureReference, 
@@ -125,34 +260,66 @@ shinyServer(function(input, output, session){
   )
   
   observeEvent(
-    input$btn_saveStudyNote, 
+    input$btn_addStudyNoteTopic, 
     {
-      study_note_oid <- if(rv_Notes$AddEditView == "Add") numeric(0) else as.numeric(input$rdo_studyNote)
-      saveNote(note = input$txt_studyNoteText, 
-               study_note_oid = study_note_oid,
-               verse_oid = rv_Notes$PendingScripturalReference, 
-               other_reference = rv_Notes$PendingOtherReference)
-      
-      rv_Notes$StudyNotes <- getStudyNotes(DATABASE_FILE)
-      
-      replaceData(proxy_dt_studyNotes,
-                   rv_Notes$StudyNotes %>% 
-                    radioDataTable(id_variable = "OID", 
-                                   element_name = "rdo_studyNote", 
-                                   checked = as.numeric(input$rdo_studyNote)))
-      
-      toggleModal(session = session, 
-                  modalId = "modal_studyNote", 
-                  toggle = "close")
+      req(input$sel_studyNoteTopic)
+
+      rv_Notes$PendingStudyTopic <- as.numeric(input$sel_studyNoteTopic)
     }
   )
   
-  # Output ----------------------------------------------------------
+
+  
+  # Notes - Event Observers - View Note -----------------------------
+  
+  observeEvent(
+    input$btn_viewSelectedNote, 
+    {
+      write_to <- tempfile(fileext = ".html")
+
+      rmarkdown::render(input = "StudyNoteTemplate.Rmd", 
+                        output_format = "html_document", 
+                        output_file = basename(write_to), 
+                        output_dir = dirname(write_to), 
+                        params = list(study_note_oid = input$rdo_studyNote, 
+                                      database_file = DATABASE_FILE))
+      
+      
+      html <- readLines(write_to,
+                        encoding = "UTF-8")
+      html <- paste0(html, collapse = "\n")
+      html <- sub("^.+[<]body[>]", "<div>", html)
+      html <- sub("[<]/body[>].+", "</div>", html)
+      
+      rv_Notes$NoteHtmlCode <- html
+      
+      toggleModal(session = session, 
+                  modalId = "modal_viewStudyNote", 
+                  toggle = "open")
+    }
+  )
+  
+  # Notes - Download Handlers ---------------------------------------
+  
+  output$dwn_studyNote <- 
+    downloadHandler(
+      filename = "StudyNote.html", 
+      content = function(file){
+        rmarkdown::render(input = "StudyNoteTemplate.Rmd", 
+                          output_format = "html_document", 
+                          output_file = basename(file), 
+                          output_dir = dirname(file), 
+                          params = list(study_note_oid = input$rdo_studyNote, 
+                                        database_file = DATABASE_FILE))
+      }
+    )
+  
+  # Notes - Output --------------------------------------------------
   
   output$txt_modalStudyNote_Title <- 
     renderText({
       sprintf("%s a Note", 
-              rv_Notes$NoteEditorTitle)
+              rv_Notes$AddEditView)
     })
   
   output$dt_studyNotes <- 
@@ -169,7 +336,8 @@ shinyServer(function(input, output, session){
   
   output$txt_savedScripturalReference <- 
     renderText({
-      req(rv_Notes$SavedScripturalReference)
+      req(rv_Notes$SavedScripturalReference, 
+          rv_Notes$AddEditView == "Edit")
 
       sprintf("Scriptural References: %s", 
               formatScriptureReference(rv_Notes$SavedScripturalReference$ParentVerse))
@@ -178,11 +346,25 @@ shinyServer(function(input, output, session){
   
   output$txt_savedOtherReference <-
     renderText({
-      req(rv_Notes$SavedOtherReference)
+      req(rv_Notes$SavedOtherReference, 
+          rv_Notes$AddEditView == "Edit")
       sprintf("Other Reference: %s", 
               paste0(rv_Notes$SavedOtherReference$Reference, 
                      collapse = "<br/>")) %>% 
         HTML()
+    })
+  
+  output$txt_savedStudyNoteTopic <- 
+    renderText({
+      req(rv_Notes$SavedStudyTopic, 
+          rv_Notes$AddEditView == "Edit")
+      print(rv_Notes$SavedStudyTopic)
+      ThisTopic <- rv_Topics$Topics
+      ThisTopic <- ThisTopic[ThisTopic$OID %in% rv_Notes$SavedStudyTopic$ParentTopic, ]
+      
+      sprintf("Topics: %s", 
+              paste0(sort(ThisTopic$Topic), 
+                     collapse = ",")) 
     })
   
   output$txt_pendingScripturalReference <- 
@@ -201,4 +383,77 @@ shinyServer(function(input, output, session){
                      collapse = "<br/>")) %>% 
         HTML()
     })
+  
+  output$txt_pendingStudyNoteTopic <- 
+    renderText({
+      req(rv_Notes$PendingStudyTopic)
+      
+      ThisTopic <- rv_Topics$Topics
+      ThisTopic <- ThisTopic[ThisTopic$OID %in% rv_Notes$PendingStudyTopic, ]
+      
+      sprintf("Pending Topics: %s", 
+              paste0(sort(ThisTopic$Topic), 
+                     collapse = ",")) 
+    })
+  
+  output$view_studyNote <- 
+    renderUI({
+      HTML(rv_Notes$NoteHtmlCode)
+    })
+  
+  # Topics - Reactive Values ----------------------------------------
+  
+  rv_Topics <- reactiveValues(
+    Topics = TOPIC
+  )
+  
+  # Topics - Event Observers ----------------------------------------
+  
+  observeEvent(
+    rv_Topics$Topics, 
+    {
+      choice <- rv_Topics$Topics
+      choice <- choice[order(choice$Topic), ]
+      
+      display <- choice$OID
+      names(display) <- choice$Topic
+      
+      updateSelectInput(session= session, 
+                        inputId = "sel_studyNoteTopic", 
+                        choices = display)
+      
+      updateSelectInput(session= session, 
+                        inputId = "sel_filterTopic", 
+                        choices = display)
+    }
+  )
+  
+  observeEvent(
+    input$btn_addTopic, 
+    {
+      req(trimws(input$txt_newTopic) != "")
+      
+      rv_Topics$Topics <- addNewTopic(input$txt_newTopic)
+      
+      DT::replaceData(proxy_dt_topicList, 
+                      rv_Topics$Topics %>% arrange(Topic),
+                      resetPaging = FALSE,
+                      rownames = FALSE)
+      
+      updateTextInput(session = session, 
+                      inputId = "txt_newTopic", 
+                      value = "")
+    }
+  )
+  
+  # Topics - Output -------------------------------------------------
+  
+  output$dt_topicList <- 
+    DT::renderDataTable({
+      DT::datatable(TOPIC %>% arrange(Topic),
+                    rownames = FALSE)
+    })
+  
+  proxy_dt_topicList <- DT::dataTableProxy("dt_topicList")
+  
 })

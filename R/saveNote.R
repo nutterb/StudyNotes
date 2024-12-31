@@ -1,7 +1,8 @@
 saveNote <- function(note, 
                      study_note_oid = numeric(0), 
                      verse_oid = numeric(0), 
-                     other_reference = character(0)){
+                     other_reference = character(0), 
+                     topic_oid = numeric(0)){
   conn <- dbConnect(RSQLite::SQLite(), 
                     DATABASE_FILE)
   on.exit({ dbDisconnect(conn) })
@@ -95,5 +96,39 @@ saveNote <- function(note,
         )
       dbClearResult(res)
     }
+  }
+  
+  # Add Study Note Topics -------------------------------------------
+  
+  ExistingTopic <- 
+    dbGetQuery(
+      conn, 
+      sqlInterpolate(
+        conn,
+        "SELECT ParentTopic 
+          FROM StudyNoteTopic 
+         WHERE ParentStudyNote = ?study_note_oid", 
+        study_note_oid = study_note_oid
+      )
+    )
+  
+  topic_oid <- topic_oid[!topic_oid %in% ExistingTopic$ParentTopic]
+
+  for (t in topic_oid){
+    statement <- "INSERT INTO StudyNoteTopic
+                  (ParentStudyNote, ParentTopic)
+                  VALUES
+                  (?study_note_oid, ?topic_oid)"
+    res <- 
+      dbSendStatement(
+        conn, 
+        sqlInterpolate(
+          conn, 
+          statement, 
+          study_note_oid = study_note_oid, 
+          topic_oid = t
+        )
+      )
+    dbClearResult(res)
   }
 }

@@ -17,6 +17,7 @@ library(dplyr)
 
 
 DATABASE_FILE <- keyring::key_get("StudyNotes", "DatabaseFile", "StudyNotes")
+# DATABASE_FILE <- keyring::key_get("StudyNotes", "PersonalStudyNotes", "StudyNotes") # My personal notes
 
 conn <- dbConnect(RSQLite::SQLite(), 
                   DATABASE_FILE)
@@ -50,5 +51,7 @@ BOOK <- dbReadTable(conn, "Book")
 CHAPTER <- dbReadTable(conn, "Chapter")
 
 VERSE <- dbReadTable(conn, "Verse")
+
+TOPIC <- dbReadTable(conn, "Topic")
 
 dbDisconnect(conn)

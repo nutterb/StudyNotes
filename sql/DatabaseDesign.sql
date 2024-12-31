@@ -53,3 +53,17 @@ CREATE TABLE [StudyNoteOtherReference](
   
   FOREIGN KEY (ParentStudyNote) REFERENCES [StudyNote](OID)
 );
+
+CREATE TABLE [Topic](
+  OID INTEGER PRIMARY KEY, 
+  Topic VARCHAR(100)
+);
+
+CREATE TABLE [StudyNoteTopic](
+  OID INTEGER PRIMARY KEY, 
+  ParentStudyNote INTEGER NOT NULL, 
+  ParentTopic INTEGER NOT NULL, 
+  
+  FOREIGN KEY (ParentStudyNote) REFERENCES [StudyNote](OID), 
+  FOREIGN KEY (ParentTopic) REFERENCES [Topic](OID)
+);
