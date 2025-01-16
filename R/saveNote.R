@@ -1,4 +1,6 @@
 saveNote <- function(note, 
+                     is_future_research = FALSE, 
+                     is_prepared_talk = FALSE,
                      study_note_oid = numeric(0), 
                      verse_oid = numeric(0), 
                      other_reference = character(0), 
@@ -12,14 +14,16 @@ saveNote <- function(note,
   
   # Add or edit the note --------------------------------------------
   if (length(study_note_oid) == 0){
-    statement <- "INSERT INTO StudyNote (Note) VALUES (?note)"
+    statement <- "INSERT INTO StudyNote (Note, IsFutureResearch, IsPreparedTalk) VALUES (?note, ?future_research, ?prepared_talk)"
     result <- 
       dbSendStatement(
         conn, 
         sqlInterpolate(
           conn, 
           statement, 
-          note = note
+          note = note, 
+          future_research = is_future_research, 
+          prepared_talk = is_prepared_talk
         )
       )
     DBI::dbClearResult(result)
@@ -29,7 +33,10 @@ saveNote <- function(note,
     dbClearResult(result)
     study_note_oid <- NewID$OID
   } else {
-    statement <- "UPDATE StudyNote SET Note = ?note WHERE OID = ?study_note_oid"
+    statement <- "UPDATE StudyNote SET Note = ?note,
+    IsFutureResearch = ?future_research, 
+    IsPreparedTalk = ?prepared_talk
+    WHERE OID = ?study_note_oid"
     result <- 
       dbSendStatement(
         conn, 
@@ -37,6 +44,8 @@ saveNote <- function(note,
           conn, 
           statement, 
           note = note, 
+          future_research = is_future_research, 
+          prepared_talk = is_prepared_talk,
           study_note_oid = study_note_oid
         )
       )

@@ -34,7 +34,9 @@ CREATE TABLE [Verse] (
 
 CREATE TABLE [StudyNote] (
   [OID] INTEGER PRIMARY KEY, 
-  [Note] TEXT
+  [Note] TEXT, 
+  [IsFutureResearch] BIT, 
+  [IsPreparedTalk] BIT
 );
 
 CREATE TABLE [StudyNoteScriptureReference] (

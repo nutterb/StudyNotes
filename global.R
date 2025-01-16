@@ -16,7 +16,7 @@ library(dplyr)
 #                    keyring = "StudyNotes")
 
 
-DATABASE_FILE <- keyring::key_get("StudyNotes", "DatabaseFile", "StudyNotes")
+# DATABASE_FILE <- keyring::key_get("StudyNotes", "DatabaseFile", "StudyNotes")
 # DATABASE_FILE <- keyring::key_get("StudyNotes", "PersonalStudyNotes", "StudyNotes") # My personal notes
 
 conn <- dbConnect(RSQLite::SQLite(), 
