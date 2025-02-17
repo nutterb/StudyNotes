@@ -119,6 +119,14 @@ shinyServer(function(input, output, session){
     {
       rv_Notes$AddEditView <- "Add"
       
+      updateCheckboxInput(session = session, 
+                          inputId = "chk_studyNoteIsFutureResearch", 
+                          value = FALSE)
+      
+      updateCheckboxInput(session = session, 
+                          inputId = "chk_studyNoteIsPreparedTalk", 
+                          value = FALSE)
+      
       updateTextInput(session = session, 
                       inputId = "txt_studyNoteText", 
                       value = "")
@@ -149,6 +157,14 @@ shinyServer(function(input, output, session){
     {
       rv_Notes$AddEditView <- "Edit"
       
+      updateCheckboxInput(session = session, 
+                          inputId = "chk_studyNoteIsFutureResearch", 
+                          value = rv_Notes$SelectedStudyNote$IsFutureResearch)
+      
+      updateCheckboxInput(session = session, 
+                          inputId = "chk_studyNoteIsPreparedTalk", 
+                          value = rv_Notes$SelectedStudyNote$IsPreparedTalk)
+      
       updateTextAreaInput(session = session, 
                           inputId = "txt_studyNoteText", 
                           value = rv_Notes$SelectedStudyNote$Note)
@@ -178,7 +194,9 @@ shinyServer(function(input, output, session){
     input$btn_saveStudyNote, 
     {
       study_note_oid <- if(rv_Notes$AddEditView == "Add") numeric(0) else as.numeric(input$rdo_studyNote)
-      saveNote(note = input$txt_studyNoteText, 
+      saveNote(note = input$txt_studyNoteText,
+               is_future_research = input$chk_studyNoteIsFutureResearch, 
+               is_prepared_talk = input$chk_studyNoteIsPreparedTalk,
                study_note_oid = study_note_oid,
                verse_oid = rv_Notes$PendingScripturalReference, 
                other_reference = rv_Notes$PendingOtherReference, 

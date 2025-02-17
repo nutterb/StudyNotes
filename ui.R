@@ -39,6 +39,10 @@ dashboardPage(
       fluidRow(
         column(
           width = 6, 
+          checkboxInput(inputId = "chk_studyNoteIsFutureResearch", 
+                        label = "Mark for Future Research"),
+          checkboxInput(inputId = "chk_studyNoteIsPreparedTalk", 
+                        label = "Prepared Talk"),
           textAreaInput(inputId = "txt_studyNoteText", 
                         label = "Study Note", 
                         width = "100%", 
