@@ -1,3 +1,4 @@
+.libPaths("C:/Users/benja/Documents/RLibrary/Standard4.4")
 library(shiny)
 library(shinyBS)
 library(shinybusy)
@@ -16,8 +17,8 @@ library(dplyr)
 #                    keyring = "StudyNotes")
 
 
-# DATABASE_FILE <- keyring::key_get("StudyNotes", "DatabaseFile", "StudyNotes")
-# DATABASE_FILE <- keyring::key_get("StudyNotes", "PersonalStudyNotes", "StudyNotes") # My personal notes
+
+DATABASE_FILE <- keyring::key_get("StudyNotes", "DatabaseFile", "StudyNotes")
 
 conn <- dbConnect(RSQLite::SQLite(), 
                   DATABASE_FILE)
