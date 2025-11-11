@@ -164,14 +164,7 @@ shinyServer(function(input, output, session){
       updateTextInput(session = session, 
                       inputId = "txt_studyNoteText", 
                       value = "")
-      
-      updateSelectInput(session = session, 
-                        inputId = "sel_reference_tome", 
-                        selected = "1")
-      
-     # updateBookSelection(tome_oid = 1)
-     # updateChapterSelection(book_oid = 1)
-     # updateVerseSelection(chapter_oid = 1)
+
      updateSelectInput(session = session, 
                        inputId = "sel_studyNoteTopic", 
                        selected = character(0))
