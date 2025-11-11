@@ -39,9 +39,13 @@ shinyServer(function(input, output, session){
     input$sel_filterTome, 
     {
       book <- updateBookSelection(tome_oid = as.numeric(input$sel_filterTome), 
-                                  inputId = "sel_filterBook")
+                                  inputId = "sel_filterBook", 
+                                  with_any = TRUE)
+
       chapter <- updateChapterSelection(book_oid = book[1], 
-                                        inputId = "sel_filterChapter")
+                                        inputId = "sel_filterChapter", 
+                                        with_any = TRUE)
+
       updateVerseSelection(chapter_oid = chapter[1], 
                            inputId = "chkgrp_fingerVerse")
     }
@@ -52,7 +56,8 @@ shinyServer(function(input, output, session){
     {
       req(input$sel_reference_book)
       chapter <- updateChapterSelection(book_oid = as.numeric(input$sel_filterBook), 
-                                        inputId = "sel_filterChapter")
+                                        inputId = "sel_filterChapter", 
+                                        with_any = TRUE)
       updateVerseSelection(chapter_oid = chapter[1], 
                            inputId = "chkgrp_filterVerse")
     }
@@ -97,15 +102,44 @@ shinyServer(function(input, output, session){
     input$btn_applyFilters,
     {
       FilterData <- getStudyNoteFilterData()
-      FilterData <- FilterData[FilterData$ParentVerse %in% as.numeric(input$chkgrp_filterVerse) | 
-                                 FilterData$ParentTopic %in% as.numeric(input$sel_filterTopic), ]
       
+      is_in_group <- function(x, set) {
+        if (length(set) == 0) {
+          logical(0)
+        } else if (length(set) == 1 && set == -1) {
+          logical(0)
+        } else {
+          x %in% set
+        }
+      }
+      
+      lgl <- 
+        list(
+          is_in_group(FilterData$ParentTome, 
+                      as.numeric(input$sel_filterTome)), 
+          is_in_group(FilterData$ParentBook, 
+                      as.numeric(input$sel_filterBook)), 
+          is_in_group(FilterData$ParentChapter, 
+                      as.numeric(input$sel_filterChapter)),
+          is_in_group(FilterData$ParentVerse, 
+                      as.numeric(input$chkgrp_filterVerse)), 
+          is_in_group(FilterData$ParentTopic, 
+                      as.numeric(input$sel_filterTopic))
+        )
+      
+      lgl <- lgl[lengths(lgl) > 0]
+      lgl <- Reduce(`&`, lgl)
+      
+      if (is.null(lgl)) lgl <- rep(TRUE, nrow(FilterData))
+      
+      FilterData <- FilterData[lgl, ]
+
       MatchingData <- rv_Notes$StudyNotes
       MatchingData <- MatchingData[MatchingData$OID %in% FilterData$StudyNoteOID, ]
-      
+
       replaceData(proxy_dt_studyNotes,
-                  MatchingData %>% 
-                    radioDataTable(id_variable = "OID", 
+                  MatchingData %>%
+                    radioDataTable(id_variable = "OID",
                                    element_name = "rdo_studyNote"),
                   resetPaging = FALSE,
                   rownames = FALSE)
@@ -347,7 +381,8 @@ shinyServer(function(input, output, session){
                        element_name = "rdo_studyNote") %>% 
       DT::datatable(selection = "none", 
                     escape = -1, 
-                    rownames = FALSE)
+                    rownames = FALSE, 
+                    filter = "top")
     })
   
   proxy_dt_studyNotes <- DT::dataTableProxy("dt_studyNotes")
