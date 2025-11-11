@@ -134,8 +134,6 @@ shinyServer(function(input, output, session){
       
       FilterData <- FilterData[lgl, ]
 
-      print(FilterData)
-
       MatchingData <- rv_Notes$StudyNotes
       MatchingData <- MatchingData[MatchingData$OID %in% FilterData$StudyNoteOID, ]
 
@@ -383,7 +381,8 @@ shinyServer(function(input, output, session){
                        element_name = "rdo_studyNote") %>% 
       DT::datatable(selection = "none", 
                     escape = -1, 
-                    rownames = FALSE)
+                    rownames = FALSE, 
+                    filter = "top")
     })
   
   proxy_dt_studyNotes <- DT::dataTableProxy("dt_studyNotes")
