@@ -133,7 +133,8 @@ dashboardPage(
             width = 2, 
             selectInput(inputId = "sel_filterTome", 
                         label = "Tome", 
-                        choices = setNames(TOME$OID, TOME$Title))
+                        choices = setNames(c(-1, TOME$OID), 
+                                           c("Any", TOME$Title)))
           ), 
           column(
             width = 2,
