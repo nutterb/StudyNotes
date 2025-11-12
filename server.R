@@ -185,6 +185,7 @@ shinyServer(function(input, output, session){
   observeEvent(
     input$btn_editSelectedNote, 
     {
+      req(input$rdo_studyNote)
       rv_Notes$AddEditView <- "Edit"
       
       updateCheckboxInput(session = session, 
@@ -263,7 +264,25 @@ shinyServer(function(input, output, session){
     }
   )
   
-  # Notes - Event Observers - Reference selecion inputs -------------
+  observeEvent(
+    input$btn_update_reference, 
+    {
+      CurrentReference <- 
+        getScripturalReference(input$rdo_studyNote)
+      
+      ref_to_remove <- setdiff(CurrentReference$OID, 
+                               input$chkgrp_edit_reference)
+      
+      if (length(ref_to_remove) > 0) {
+        removeScriptureReference(ref_to_remove)
+        toggleModal(session = session, 
+                    modalId = "modal_studyNote", 
+                    toggle = "close")
+      }
+    }
+  )
+  
+  # Notes - Event Observers - Reference selection inputs -------------
   
   observeEvent(
     input$sel_reference_tome, 
