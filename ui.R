@@ -36,72 +36,86 @@ dashboardPage(
       trigger = "trg_none", 
       size = "large", 
       
-      fluidRow(
-        column(
-          width = 6, 
-          checkboxInput(inputId = "chk_studyNoteIsFutureResearch", 
-                        label = "Mark for Future Research"),
-          checkboxInput(inputId = "chk_studyNoteIsPreparedTalk", 
-                        label = "Prepared Talk"),
-          textAreaInput(inputId = "txt_studyNoteText", 
-                        label = "Study Note", 
-                        width = "100%", 
-                        height = "400px"), 
+      tabsetPanel(
+        tabPanel(
+          title = "Notes", 
           fluidRow(
             column(
               width = 6, 
-              textOutput("txt_savedStudyNoteTopic"),
-              textOutput("txt_savedScripturalReference"),
-              uiOutput("txt_savedOtherReference")
-            ),
+              checkboxInput(inputId = "chk_studyNoteIsFutureResearch", 
+                            label = "Mark for Future Research"),
+              checkboxInput(inputId = "chk_studyNoteIsPreparedTalk", 
+                            label = "Prepared Talk"),
+              textAreaInput(inputId = "txt_studyNoteText", 
+                            label = "Study Note", 
+                            width = "100%", 
+                            height = "400px"), 
+              fluidRow(
+                column(
+                  width = 6, 
+                  textOutput("txt_savedStudyNoteTopic"),
+                  textOutput("txt_savedScripturalReference"),
+                  uiOutput("txt_savedOtherReference")
+                ),
+                column(
+                  width = 6,
+                  span(textOutput(outputId = "txt_pendingStudyNoteTopic"),
+                       style = "color:purple;font-weight:bold;"),
+                  span(textOutput(outputId = "txt_pendingScripturalReference"),
+                       style = "color:purple;font-weight:bold;"),
+                  span(uiOutput(outputId = "txt_pendingOtherReference"),
+                       style = "color:purple;font-weight:bold;")
+                )
+              ),
+              actionButton(inputId = "btn_saveStudyNote", 
+                           label = "Save Note")
+            ), 
             column(
-              width = 6,
-              span(textOutput(outputId = "txt_pendingStudyNoteTopic"),
-                   style = "color:purple;font-weight:bold;"),
-              span(textOutput(outputId = "txt_pendingScripturalReference"),
-                   style = "color:purple;font-weight:bold;"),
-              span(uiOutput(outputId = "txt_pendingOtherReference"),
-                   style = "color:purple;font-weight:bold;")
+              width = 3,
+              fluidRow(
+                selectInput(inputId = "sel_reference_tome", 
+                            label = "Tome", 
+                            choices = setNames(TOME$OID, TOME$Title)),
+                selectInput(inputId = "sel_reference_book", 
+                            label = "Book", 
+                            choices = NULL), 
+                selectInput(inputId = "sel_reference_chapter", 
+                            label = "Chapter", 
+                            choices = NULL), 
+                checkboxGroupInput(inputId = "chkgrp_reference_verse", 
+                                   label = "Verse", 
+                                   choices = NULL, 
+                                   inline = TRUE), 
+                actionButton(inputId = "btn_addScriptureReference", 
+                             label = "Add Scripture Reference")
+              )
+            ), 
+            column(
+              width = 3, 
+              textInput(inputId = "txt_otherReference", 
+                        label = "Non-Scriptural Reference", 
+                        width = "100%"), 
+              actionButton(inputId = "btn_addOtherReference", 
+                           label = "Add Non Scriptural Reference"), 
+              selectInput(inputId = "sel_studyNoteTopic", 
+                          label = "Topic", 
+                          choices = character(0), 
+                          multiple = TRUE, 
+                          selectize = FALSE, 
+                          size = 20),
+              actionButton(inputId = "btn_addStudyNoteTopic", 
+                           label = "Add Topics")
             )
-          ),
-          actionButton(inputId = "btn_saveStudyNote", 
-                       label = "Save Note")
-        ), 
-        column(
-          width = 3,
-          fluidRow(
-            selectInput(inputId = "sel_reference_tome", 
-                        label = "Tome", 
-                        choices = setNames(TOME$OID, TOME$Title)),
-            selectInput(inputId = "sel_reference_book", 
-                        label = "Book", 
-                        choices = NULL), 
-            selectInput(inputId = "sel_reference_chapter", 
-                        label = "Chapter", 
-                        choices = NULL), 
-            checkboxGroupInput(inputId = "chkgrp_reference_verse", 
-                               label = "Verse", 
-                               choices = NULL, 
-                               inline = TRUE), 
-            actionButton(inputId = "btn_addScriptureReference", 
-                         label = "Add Scripture Reference")
           )
         ), 
-        column(
-          width = 3, 
-          textInput(inputId = "txt_otherReference", 
-                    label = "Non-Scriptural Reference", 
-                    width = "100%"), 
-          actionButton(inputId = "btn_addOtherReference", 
-                       label = "Add Non Scriptural Reference"), 
-          selectInput(inputId = "sel_studyNoteTopic", 
-                      label = "Topic", 
-                      choices = character(0), 
-                      multiple = TRUE, 
-                      selectize = FALSE, 
-                      size = 20),
-          actionButton(inputId = "btn_addStudyNoteTopic", 
-                       label = "Add Topics")
+        tabPanel(
+          title = "Edit References", 
+          checkboxGroupInput(inputId = "chkgrp_edit_reference", 
+                             label = "Check References to Retain", 
+                             choices = character(0), 
+                             selected = character(0)), 
+          actionButton(inputId = "btn_update_reference", 
+                       label = "Update")
         )
       )
     ),
