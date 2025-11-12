@@ -168,6 +168,10 @@ shinyServer(function(input, output, session){
                        inputId = "sel_studyNoteTopic", 
                        selected = character(0))
      
+     updateCheckboxGroupInput(inputId = "chkgrp_edit_reference", 
+                              choices = character(0), 
+                              selected = character(0))
+     
      rv_Notes$PendingScripturalReference <- numeric(0)
      rv_Notes$PendingOtherReference <- character(0)
      rv_Notes$PendingStudyTopic <- numeric(0)
@@ -200,11 +204,26 @@ shinyServer(function(input, output, session){
                         selected = "1")
       
       updateBookSelection(tome_oid = 1)
+
       updateChapterSelection(book_oid = 1)
+      
       updateVerseSelection(chapter_oid = 1)
+      
       updateSelectInput(session = session, 
                         inputId = "sel_studyNoteTopic", 
                         selected = character(0))
+      
+      CurrentReference <- 
+        getScripturalReference(input$rdo_studyNote) %>% 
+        mutate(label = sprintf("%s %s:%s", 
+                               Abbreviation, 
+                               ChapterNumber, 
+                               VerseNumber))
+      chk_choice <- CurrentReference$OID
+      names(chk_choice) <- CurrentReference$label
+      updateCheckboxGroupInput(inputId = "chkgrp_edit_reference", 
+                               choices = chk_choice, 
+                               selected = chk_choice)
       
       rv_Notes$PendingScripturalReference <- numeric(0)
       rv_Notes$PendingOtherReference <- character(0)

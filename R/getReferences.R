@@ -7,8 +7,17 @@ getScripturalReference <- function(study_note_oid){
     conn, 
     sqlInterpolate(
       conn,
-      "SELECT OID, ParentVerse
-       FROM [StudyNoteScriptureReference]
+      "SELECT SNSR.OID, SNSR.ParentVerse, 
+        B.Abbreviation,
+        C.ChapterNumber,
+        V.VerseNumber
+       FROM [StudyNoteScriptureReference] SNSR
+        LEFT JOIN Verse V
+          ON SNSR.ParentVerse = V.OID
+        LEFT JOIN Chapter C
+          ON V.ParentChapter = C.OID
+        LEFT JOIN Book B
+          ON C.ParentBook = B.OID
        WHERE ParentStudyNote = ?study_note_oid", 
       study_note_oid = study_note_oid
     )
