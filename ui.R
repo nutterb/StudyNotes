@@ -133,20 +133,30 @@ dashboardPage(
             width = 2, 
             selectInput(inputId = "sel_filterTome", 
                         label = "Tome", 
-                        choices = setNames(c(-1, TOME$OID), 
-                                           c("Any", TOME$Title)))
+                        choices = setNames(TOME$OID, 
+                                           TOME$Title), 
+                        selected = character(0),
+                        multiple = TRUE, 
+                        selectize = FALSE, 
+                        size = 7)
           ), 
           column(
             width = 2,
             selectInput(inputId = "sel_filterBook", 
                         label = "Book", 
-                        choices = character(0))
+                        choices = character(0), 
+                        multiple = TRUE, 
+                        selectize = FALSE, 
+                        size = 10)
           ), 
           column(
             width = 1, 
             selectInput(inputId = "sel_filterChapter", 
                         label = "Chapter", 
-                        choices = character(0))
+                        choices = character(0), 
+                        multiple = TRUE, 
+                        selectize = FALSE, 
+                        size = 10)
           ), 
           column(
             width = 3, 

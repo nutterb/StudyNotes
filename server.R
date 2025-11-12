@@ -40,13 +40,12 @@ shinyServer(function(input, output, session){
     {
       book <- updateBookSelection(tome_oid = as.numeric(input$sel_filterTome), 
                                   inputId = "sel_filterBook", 
-                                  with_any = TRUE)
+                                  selected = input$sel_filterBook)
 
-      chapter <- updateChapterSelection(book_oid = book[1], 
-                                        inputId = "sel_filterChapter", 
-                                        with_any = TRUE)
+      chapter <- updateChapterSelection(book_oid = as.numeric(input$sel_filterBook), 
+                                        inputId = "sel_filterChapter")
 
-      updateVerseSelection(chapter_oid = chapter[1], 
+      updateVerseSelection(chapter_oid = as.numeric(input$sel_filterChapter), 
                            inputId = "chkgrp_fingerVerse")
     }
   )
@@ -54,11 +53,11 @@ shinyServer(function(input, output, session){
   observeEvent(
     input$sel_filterBook, 
     {
-      req(input$sel_reference_book)
+      req(input$sel_filterBook)
+
       chapter <- updateChapterSelection(book_oid = as.numeric(input$sel_filterBook), 
-                                        inputId = "sel_filterChapter", 
-                                        with_any = TRUE)
-      updateVerseSelection(chapter_oid = chapter[1], 
+                                        inputId = "sel_filterChapter")
+      updateVerseSelection(chapter_oid = as.numeric(input$sel_filterChapter), 
                            inputId = "chkgrp_filterVerse")
     }
   )
@@ -66,7 +65,7 @@ shinyServer(function(input, output, session){
   observeEvent(
     input$sel_filterChapter,
     {
-      req(input$sel_reference_chapter)
+      req(input$sel_filterChapter)
       updateVerseSelection(chapter_oid = as.numeric(input$sel_filterChapter), 
                            inputId = "chkgrp_filterVerse")
     }
