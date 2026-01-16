@@ -141,6 +141,8 @@ dashboardPage(
                      label = "View Selected"),
         downloadButton(outputId = "dwn_studyNote", 
                        label = "Download Note"),
+        downloadButton(outputId = "dwn_studyNoteBulk", 
+                       label = "Download Displayed Notes"),
         
         fluidRow(
           column(

@@ -1,3 +1,5 @@
+InitializedNotes <- getStudyNotes(DATABASE_FILE)
+
 shinyServer(function(input, output, session){
   
   # Notes - Reactive Values -----------------------------------------
@@ -5,7 +7,8 @@ shinyServer(function(input, output, session){
   rv_Notes <- reactiveValues(
     AddEditView = "Add", 
     
-    StudyNotes = getStudyNotes(DATABASE_FILE),
+    StudyNotes = InitializedNotes,
+    FilteredStudyNotes = InitializedNotes,
     
     SelectedStudyNote = data.frame(),
     
@@ -136,6 +139,8 @@ shinyServer(function(input, output, session){
       MatchingData <- rv_Notes$StudyNotes
       MatchingData <- MatchingData[MatchingData$OID %in% FilterData$StudyNoteOID, ]
 
+      rv_Notes$FilteredStudyNotes <- MatchingData
+      
       replaceData(proxy_dt_studyNotes,
                   MatchingData %>%
                     radioDataTable(id_variable = "OID",
@@ -393,6 +398,51 @@ shinyServer(function(input, output, session){
                           output_dir = dirname(file), 
                           params = list(study_note_oid = input$rdo_studyNote, 
                                         database_file = DATABASE_FILE))
+      }
+    )
+  
+  output$dwn_studyNoteBulk <- 
+    downloadHandler(
+      filename = "StudyNoteBulk.html", 
+      content = function(file){
+        combined_md <- tempfile()
+        tmp_md <- tempfile()
+        
+        ToRender <- rv_Notes$FilteredStudyNotes
+        ToRender <- ToRender[order(ToRender$OID), ]
+        
+        
+        for (i in seq_len(nrow(ToRender))) {
+          tmp_md <- 
+            rmarkdown::render(
+              input = "StudyNoteTemplate.Rmd", 
+              output_format = "html_document", 
+              output_file = basename(file), 
+              output_dir = dirname(file), 
+              params = list(study_note_oid = ToRender$OID[i], 
+                            database_file = DATABASE_FILE), 
+              run_pandoc = FALSE)
+          
+          md_content <- readLines(tmp_md)
+          to_remove <- which(grepl("^---", md_content))
+          to_remove <- head(to_remove, 1) : tail(to_remove, 1)
+          md_content <- md_content[-to_remove]
+          
+          write(md_content, 
+                combined_md, 
+                append = TRUE)
+          write("<hr style='height:4px;border-width:0;color:purple;background-color:purple'>", 
+                combined_md, 
+                append = TRUE)
+          unlink(tmp_md)
+        }
+        
+        pandoc::pandoc_convert(
+          file = combined_md, 
+          output = file, 
+          to = "html"
+        )
+        
       }
     )
   
